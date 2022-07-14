@@ -1,0 +1,12 @@
+server:
+   port: 8282
+
+spring:
+   data:
+      mongodb:
+         uri: mongodb+srv://utsav:Utsav-1704@cluster0.tnbctsc.mongodb.net/chat-application?retryWrites=true&w=majority
+   servlet:
+      multipart:
+         max-file-size: 10KB
+         max-request-size: 5MB
+   
