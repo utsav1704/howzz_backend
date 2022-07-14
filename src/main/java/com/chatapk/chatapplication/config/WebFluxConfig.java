@@ -13,7 +13,7 @@ public class WebFluxConfig implements WebFluxConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
         .allowCredentials(true)
-            .allowedOrigins("http://localhost:3000")
+            .allowedOrigins("https://howzz-frontend.herokuapp.com")
             .allowedMethods("GET","POST","DELETE")
             .allowedHeaders("*");
     }
