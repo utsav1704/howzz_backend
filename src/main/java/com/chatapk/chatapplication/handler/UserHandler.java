@@ -63,11 +63,11 @@ public class UserHandler {
     }
 
     public Mono<ServerResponse> loadLoginPage(ServerRequest serverRequest) {
-        return ServerResponse.permanentRedirect(URI.create("http://localhost:3000")).build();
+        return ServerResponse.permanentRedirect(URI.create("https://howzz-frontend.herokuapp.com")).build();
     }
 
     public Mono<ServerResponse> loadRegisterPage(ServerRequest serverRequest) {
-        return ServerResponse.permanentRedirect(URI.create("http://localhost:3000/signup")).build();
+        return ServerResponse.permanentRedirect(URI.create("https://howzz-frontend.herokuapp.com/signup")).build();
     }
 
     public Mono<ServerResponse> loadUserDashboard(ServerRequest serverRequest) {
@@ -77,7 +77,7 @@ public class UserHandler {
             // Mono<? extends Principal> principal = serverRequest.principal();
 
             // return ServerResponse.ok().body(user , User.class);
-            return ServerResponse.permanentRedirect(URI.create("http://localhost:3000/dashboard")).build();
+            return ServerResponse.permanentRedirect(URI.create("https://howzz-frontend.herokuapp.com/dashboard")).build();
         }
         return ServerResponse.badRequest().build();
         // return
