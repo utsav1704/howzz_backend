@@ -1,6 +1,8 @@
 package com.chatapk.chatapplication.config;
 
 import lombok.Data;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
@@ -9,7 +11,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtProperties {
 
-    private String secretKey = "chat";
+    @Value("${secret.key}")
+    private String secretKey;
 
     // validity in milliseconds
     private long validityInMs = 1000 * 60 * 60 * 24; // 1 day

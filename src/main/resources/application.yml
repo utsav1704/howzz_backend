@@ -4,4 +4,7 @@ spring:
          uri: ${MONGODB_URL}
 
 baseUrl: ${BASE_URL}
+
+secret:
+   key: ${SECRET_KEY}
    
