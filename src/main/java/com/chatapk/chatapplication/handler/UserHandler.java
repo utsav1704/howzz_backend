@@ -3,7 +3,10 @@ package com.chatapk.chatapplication.handler;
 import java.net.URI;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -12,13 +15,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import com.chatapk.chatapplication.models.AuthenticationRequest;
 import com.chatapk.chatapplication.models.User;
 import com.chatapk.chatapplication.repository.UserRepository;
+import com.chatapk.chatapplication.services.JwtUtil;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 public class UserHandler {
+
+    @Value("${baseUrl}")
+    private String baseUrl;
 
     @Autowired
     private UserRepository userRepository;
@@ -26,28 +35,21 @@ public class UserHandler {
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private ReactiveAuthenticationManager authenticationManager;
+
     public Mono<ServerResponse> addUser(ServerRequest serverRequest) {
         Mono<User> mono = serverRequest.bodyToMono(User.class);
-        mono = mono.map(user -> extracted(user));
+        mono = mono.map(user -> {
+            user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+            return user;
+    });
         Mono<User> flatMap = mono.flatMap(user -> userRepository.insert(user));
-        flatMap.subscribe(System.out::println);
+        // flatMap.subscribe(System.out::println);
         return ServerResponse.ok().body(flatMap, User.class);
-    }
-
-    private User extracted(User user) {
-        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-        return user;
-    }
-
-    public Mono<ServerResponse> uploadImage(ServerRequest serverRequest) {
-        // System.out.println("Here................");
-        // String id = serverRequest.pathVariable("id").toString();
-        // imageKitService.initializeImageKit();
-        // Mono<ImageKit> imageKit = Mono.just(imageKitService.getImageKit());
-        // Mono<Map<String, String>> map = imageKit.map(img ->
-        // img.getAuthenticationParameters());
-        return ServerResponse.ok().build();
-        // return ServerResponse.ok().build();
     }
 
     public Mono<ServerResponse> getUser(ServerRequest serverRequest) {
@@ -63,11 +65,11 @@ public class UserHandler {
     }
 
     public Mono<ServerResponse> loadLoginPage(ServerRequest serverRequest) {
-        return ServerResponse.permanentRedirect(URI.create("https://howzz-frontend.herokuapp.com")).build();
+        return ServerResponse.permanentRedirect(URI.create(baseUrl)).build();
     }
 
     public Mono<ServerResponse> loadRegisterPage(ServerRequest serverRequest) {
-        return ServerResponse.permanentRedirect(URI.create("https://howzz-frontend.herokuapp.com/signup")).build();
+        return ServerResponse.permanentRedirect(URI.create(baseUrl + "/signup")).build();
     }
 
     public Mono<ServerResponse> loadUserDashboard(ServerRequest serverRequest) {
@@ -77,7 +79,7 @@ public class UserHandler {
             // Mono<? extends Principal> principal = serverRequest.principal();
 
             // return ServerResponse.ok().body(user , User.class);
-            return ServerResponse.permanentRedirect(URI.create("https://howzz-frontend.herokuapp.com/dashboard")).build();
+            return ServerResponse.permanentRedirect(URI.create(baseUrl + "/dashboard")).build();
         }
         return ServerResponse.badRequest().build();
         // return
@@ -96,6 +98,47 @@ public class UserHandler {
         Mono<Authentication> authMono = context.map(con -> con.getAuthentication());
         authMono.subscribe(System.out::println);
         Mono<User> user = authMono.flatMap(auth -> userRepository.loadUserByEmail(auth.getName()));
-        return ServerResponse.ok().contentType(MediaType.TEXT_EVENT_STREAM).body(user, User.class);
+        return ServerResponse.ok().body(user, User.class);
     }
+
+    public Mono<ServerResponse> doLogin(ServerRequest serverRequest){
+        System.out.println("Here");
+        Mono<AuthenticationRequest> authRequest = serverRequest.bodyToMono(AuthenticationRequest.class);
+        Mono<String> map = authRequest
+            .flatMap(request -> authenticationManager
+            .authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()))
+            .map(jwtUtil::createToken)
+            )
+            .map(jwt -> {
+                HttpHeaders httpHeaders = new HttpHeaders();
+                httpHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer "+jwt);
+                // var body = Map.of("access_token",jwt);
+                // return ServerResponse.ok().body(body , Map.class);
+                return jwt;
+            });
+        return ServerResponse.ok().body(map , String.class);
+    }
+
+    public Mono<ServerResponse> handlePreflightRequest(ServerRequest serverRequest){
+        System.out.println("Pre-flight");
+        //   response.setHeader("Access-Control-Allow-Origin", "*");
+        //   response.setHeader("Access-Control-Allow-Methods", "POST,GET,DELETE,PUT");
+        //   response.setHeader("Access-Control-Max-Age", "3600");
+        //   response.setHeader("Access-Control-Allow-Headers", "Access-Control-Expose-Headers"+"Authorization, content-type," +
+        //   "USERID"+"ROLE"+
+        //           "access-control-request-headers,access-control-request-method,accept,origin,authorization,x-requested-with,responseType,observe");
+        return ServerResponse.ok()
+            .header("Access-Control-Allow-Origin", "*")
+            .header("Access-Control-Allow-Methods", "POST,GET,DELETE,PUT")
+            .header("Access-Control-Max-Age", "3600")
+            .build();
+            
+    }
+
+    public Mono<ServerResponse> findUsers(ServerRequest serverRequest){
+        String userId = serverRequest.pathVariable("userId");
+        Flux<User> users = userRepository.findByUserId(userId);
+        return ServerResponse.ok().body(users,User.class);
+    }
+
 }

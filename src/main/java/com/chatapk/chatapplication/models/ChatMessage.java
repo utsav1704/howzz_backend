@@ -28,10 +28,6 @@ public class ChatMessage {
         private String recipientName;
         private String content;
         private Date timestamp;
-        private MessageStatus status;
-
-        public enum MessageStatus{
-            READ , RECEIVED , DELIVERED
-        }
+        private MessageStatus messageStatus;
     
 }
